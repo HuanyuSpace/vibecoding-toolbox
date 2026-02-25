@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能工具箱 - 主页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+            padding: 40px 20px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .tool-card:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+
+        .tool-card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .tool-card:hover::before {
+            left: 100%;
+        }
+
+        .tool-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            display: block;
+            text-align: center;
+        }
+
+        .tool-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .tool-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .tool-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+
+        .tool-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tool-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .coming-soon {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .coming-soon .tool-button {
+            background: #ccc;
+        }
+
+        .coming-soon .tool-button::after {
+            content: ' (敬请期待)';
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            padding: 30px;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+
+        footer p {
+            margin-bottom: 10px;
+        }
+
+        .stats-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            animation: fadeInUp 0.6s ease-out 0.3s both;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            header p {
+                font-size: 1.1em;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛠️ 智能工具箱</h1>
+            <p>探索各种实用工具，提升你的工作效率</p>
+        </header>
+
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-number">2</div>
+                <div class="stat-label">可用工具</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">52-140</div>
+                <div class="stat-label">敏感指数范围</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">5</div>
+                <div class="stat-label">支持手势</div>
+            </div>
+        </div>
+
+        <div class="tools-grid">
+            <div class="tool-card" onclick="openTool('sensitive-quiz.html')">
+                <div class="tool-icon">🧠</div>
+                <div class="tool-title">敏感指数测试</div>
+                <div class="tool-description">
+                    了解您的敏感程度，包含48道专业题目，帮助您更好地认识自己。
+                </div>
+                <div class="tool-tags">
+                    <span class="tag">心理测试</span>
+                    <span class="tag">自我认知</span>
+                    <span class="tag">健康</span>
+                </div>
+                <button class="tool-button">开始测试</button>
+            </div>
+
+            <div class="tool-card" onclick="openTool('gesture-control.html')">
+                <div class="tool-icon">✋</div>
+                <div class="tool-title">手势控制应用</div>
+                <div class="tool-description">
+                    通过摄像头识别手势，与页面进行互动。支持点赞、差评、握拳等5种手势。
+                </div>
+                <div class="tool-tags">
+                    <span class="tag">手势识别</span>
+                    <span class="tag">计算机视觉</span>
+                    <span class="tag">交互</span>
+                </div>
+                <button class="tool-button">启动应用</button>
+            </div>
+
+            <div class="tool-card coming-soon">
+                <div class="tool-icon">🎨</div>
+                <div class="tool-title">创意画板</div>
+                <div class="tool-description">
+                    在线绘图工具，支持多种画笔、颜色和图层，释放你的创造力。
+                </div>
+                <div class="tool-tags">
+                    <span class="tag">绘图</span>
+                    <span class="tag">创作</span>
+                    <span class="tag">设计</span>
+                </div>
+                <button class="tool-button">开始创作</button>
+            </div>
+        </div>
+
+        <footer>
+            <p>💡 智能工具箱 - 让科技更简单</p>
+            <p>持续更新中，敬请期待更多功能...</p>
+        </footer>
+    </div>
+
+    <script>
+        function openTool(url) {
+            window.open(url, '_self');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 智能工具箱已加载');
+            
+            const cards = document.querySelectorAll('.tool-card');
+            cards.forEach((card, index) => {
+                if (!card.classList.contains('coming-soon')) {
+                    card.style.cursor = 'pointer';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

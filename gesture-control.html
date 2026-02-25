@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手势控制Web应用</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .video-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .video-container h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .control-panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .gesture-display {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gesture-display .gesture-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .gesture-display .gesture-name {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        .gesture-instructions {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .gesture-instructions h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .gesture-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .gesture-item:last-child {
+            border-bottom: none;
+        }
+
+        .gesture-item .icon {
+            font-size: 2em;
+            margin-right: 15px;
+            width: 50px;
+            text-align: center;
+        }
+
+        .gesture-item .info {
+            flex: 1;
+        }
+
+        .gesture-item .name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .gesture-item .action {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .interactive-area {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+
+        .interactive-area h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .interactive-box {
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .interactive-box.active {
+            border-color: #667eea;
+            background: #e8ebfa;
+        }
+
+        .interactive-box .box-content {
+            font-size: 2em;
+            color: #667eea;
+        }
+
+        .status-bar {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-indicator.active {
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.inactive {
+            background: #ccc;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✋ 手势控制Web应用</h1>
+            <p>通过手势与页面进行互动</p>
+        </header>
+
+        <div class="main-content">
+            <div class="video-container">
+                <h2>📹 摄像头</h2>
+                <div class="video-wrapper">
+                    <video id="webcam" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button class="btn" id="startBtn" onclick="toggleCamera()">📷 开启摄像头</button>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <h2>🎮 控制面板</h2>
+
+                <div class="gesture-display" id="gestureDisplay">
+                    <div class="gesture-icon">👋</div>
+                    <div class="gesture-name">等待手势...</div>
+                </div>
+
+                <div class="gesture-instructions">
+                    <h3>手势说明</h3>
+                    <div class="gesture-item">
+                        <div class="icon">✋</div>
+                        <div class="info">
+                            <div class="name">张开手掌</div>
+                            <div class="action">激活交互区域</div>
+                        </div>
+                    </div>
+                    <div class="gesture-item">
+                        <div class="icon">👍</div>
+                        <div class="info">
+                            <div class="name">点赞</div>
+                            <div class="action">增加数值</div>
+                        </div>
+                    </div>
+                    <div class="gesture-item">
+                        <div class="icon">👎</div>
+                        <div class="info">
+                            <div class="name">差评</div>
+                            <div class="action">减少数值</div>
+                        </div>
+                    </div>
+                    <div class="gesture-item">
+                        <div class="icon">✌️</div>
+                        <div class="info">
+                            <div class="name">剪刀手</div>
+                            <div class="action">重置数值</div>
+                        </div>
+                    </div>
+                    <div class="gesture-item">
+                        <div class="icon">👊</div>
+                        <div class="info">
+                            <div class="name">握拳</div>
+                            <div class="action">隐藏/显示元素</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interactive-area">
+                    <h3>交互区域</h3>
+                    <div class="interactive-box" id="interactiveBox">
+                        <div class="box-content" id="boxContent">0</div>
+                    </div>
+                </div>
+
+                <div class="status-bar">
+                    <div class="status-item">
+                        <div class="status-indicator" id="cameraStatus"></div>
+                        <span>摄像头</span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-indicator" id="gestureStatus"></div>
+                        <span>手势识别</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cameraRunning = false;
+        let hands = null;
+        let camera = null;
+        let counter = 0;
+        let lastGesture = null;
+        let gestureTimer = null;
+
+        function toggleCamera() {
+            if (cameraRunning) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        }
+
+        function startCamera() {
+            const videoElement = document.getElementById('webcam');
+            const canvasElement = document.getElementById('canvas');
+            const canvasCtx = canvasElement.getContext('2d');
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('浏览器不支持摄像头访问');
+                alert('您的浏览器不支持摄像头访问，请使用Chrome、Firefox或Edge等现代浏览器。');
+                return;
+            }
+
+            hands = new Hands({
+                locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                }
+            });
+
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.5
+            });
+
+            hands.onResults((results) => onResults(results, canvasElement, canvasCtx));
+
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: 640, 
+                    height: 480,
+                    facingMode: 'user'
+                } 
+            })
+                .then((stream) => {
+                    console.log('摄像头权限获取成功');
+                    videoElement.srcObject = stream;
+                    videoElement.onloadedmetadata = () => {
+                        console.log('视频流加载成功');
+                        videoElement.play();
+                        
+                        camera = new Camera(videoElement, {
+                            onFrame: async () => {
+                                await hands.send({image: videoElement});
+                            },
+                            width: 640,
+                            height: 480
+                        });
+
+                        camera.start();
+                        cameraRunning = true;
+                        
+                        document.getElementById('startBtn').textContent = '⏹️ 关闭摄像头';
+                        document.getElementById('cameraStatus').classList.add('active');
+                        document.getElementById('cameraStatus').classList.remove('inactive');
+                    };
+                })
+                .catch((error) => {
+                    console.error('摄像头权限请求失败:', error);
+                    let errorMessage = '无法访问摄像头';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage = '摄像头权限被拒绝，请在浏览器设置中允许摄像头访问。';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage = '未找到摄像头设备，请确保摄像头已连接。';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMessage = '摄像头被其他应用占用，请关闭其他使用摄像头的程序。';
+                    } else if (error.name === 'PermissionDeniedError') {
+                        errorMessage = '系统权限被拒绝，请在Windows设置中允许摄像头访问。';
+                    }
+                    
+                    alert(errorMessage + '\n\n错误详情: ' + error.message);
+                });
+        }
+
+        function stopCamera() {
+            if (camera) {
+                camera.stop();
+            }
+            
+            const videoElement = document.getElementById('webcam');
+            if (videoElement.srcObject) {
+                videoElement.srcObject.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+            }
+            
+            cameraRunning = false;
+            document.getElementById('startBtn').textContent = '📷 开启摄像头';
+            document.getElementById('cameraStatus').classList.remove('active');
+            document.getElementById('cameraStatus').classList.add('inactive');
+            document.getElementById('gestureStatus').classList.remove('active');
+            document.getElementById('gestureStatus').classList.add('inactive');
+        }
+
+        function onResults(results, canvasElement, canvasCtx) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            console.log('MediaPipe结果:', results);
+
+            if (results.multiHandLandmarks) {
+                console.log('检测到手部关键点:', results.multiHandLandmarks.length, '只手');
+                document.getElementById('gestureStatus').classList.add('active');
+                document.getElementById('gestureStatus').classList.remove('inactive');
+
+                for (const landmarks of results.multiHandLandmarks) {
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 2});
+                    drawLandmarks(canvasCtx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3});
+                    
+                    const gesture = detectGesture(landmarks);
+                    console.log('识别到的手势:', gesture);
+                    if (gesture !== lastGesture) {
+                        lastGesture = gesture;
+                        updateGestureDisplay(gesture);
+                        executeGestureAction(gesture);
+                    }
+                }
+            } else {
+                console.log('未检测到手部');
+                document.getElementById('gestureStatus').classList.remove('active');
+                document.getElementById('gestureStatus').classList.add('inactive');
+                lastGesture = null;
+            }
+
+            canvasCtx.restore();
+        }
+
+        function detectGesture(landmarks) {
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            const middleTip = landmarks[12];
+            const ringTip = landmarks[16];
+            const pinkyTip = landmarks[20];
+            const thumbIP = landmarks[3];
+            const indexPIP = landmarks[6];
+            const middlePIP = landmarks[10];
+            const ringPIP = landmarks[14];
+            const pinkyPIP = landmarks[18];
+            const wrist = landmarks[0];
+
+            const indexFingerUp = indexTip.y < indexPIP.y;
+            const middleFingerUp = middleTip.y < middlePIP.y;
+            const ringFingerUp = ringTip.y < ringPIP.y;
+            const pinkyFingerUp = pinkyTip.y < pinkyPIP.y;
+            const thumbUp = thumbTip.x < thumbIP.x;
+
+            const allFingersUp = indexFingerUp && middleFingerUp && ringFingerUp && pinkyFingerUp;
+            const allFingersDown = !indexFingerUp && !middleFingerUp && !ringFingerUp && !pinkyFingerUp;
+
+            if (allFingersUp && thumbUp) {
+                return 'open_palm';
+            } else if (allFingersDown && thumbUp && thumbTip.y < wrist.y) {
+                return 'thumbs_up';
+            } else if (allFingersDown && thumbUp && thumbTip.y > wrist.y) {
+                return 'thumbs_down';
+            } else if (indexFingerUp && middleFingerUp && !ringFingerUp && !pinkyFingerUp) {
+                return 'peace';
+            } else if (allFingersDown && !thumbUp) {
+                return 'fist';
+            }
+
+            return 'unknown';
+        }
+
+        function updateGestureDisplay(gesture) {
+            const gestureDisplay = document.getElementById('gestureDisplay');
+            const gestureIcon = gestureDisplay.querySelector('.gesture-icon');
+            const gestureName = gestureDisplay.querySelector('.gesture-name');
+
+            const gestureInfo = {
+                'open_palm': { icon: '✋', name: '张开手掌' },
+                'thumbs_up': { icon: '👍', name: '点赞' },
+                'thumbs_down': { icon: '👎', name: '差评' },
+                'peace': { icon: '✌️', name: '剪刀手' },
+                'fist': { icon: '👊', name: '握拳' },
+                'unknown': { icon: '🤔', name: '未知手势' }
+            };
+
+            const info = gestureInfo[gesture] || gestureInfo['unknown'];
+            gestureIcon.textContent = info.icon;
+            gestureName.textContent = info.name;
+        }
+
+        function executeGestureAction(gesture) {
+            const interactiveBox = document.getElementById('interactiveBox');
+            const boxContent = document.getElementById('boxContent');
+
+            switch (gesture) {
+                case 'open_palm':
+                    interactiveBox.classList.add('active');
+                    break;
+                case 'thumbs_up':
+                    counter++;
+                    boxContent.textContent = counter;
+                    interactiveBox.style.transform = 'scale(1.1)';
+                    setTimeout(() => interactiveBox.style.transform = '', 200);
+                    break;
+                case 'thumbs_down':
+                    counter--;
+                    boxContent.textContent = counter;
+                    interactiveBox.style.transform = 'scale(0.9)';
+                    setTimeout(() => interactiveBox.style.transform = '', 200);
+                    break;
+                case 'peace':
+                    counter = 0;
+                    boxContent.textContent = counter;
+                    interactiveBox.style.transform = 'rotate(360deg)';
+                    setTimeout(() => interactiveBox.style.transform = '', 500);
+                    break;
+                case 'fist':
+                    if (interactiveBox.style.display === 'none') {
+                        interactiveBox.style.display = 'block';
+                    } else {
+                        interactiveBox.style.display = 'none';
+                    }
+                    break;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('cameraStatus').classList.add('inactive');
+            document.getElementById('gestureStatus').classList.add('inactive');
+        });
+    </script>
+</body>
+</html>
